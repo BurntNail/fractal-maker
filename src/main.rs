@@ -70,20 +70,20 @@ where F: Fn(u32, u32) -> u8
 }
 
 fn mandlebrot (x: u32, y: u32) -> u8{
+    let calc = |c: Complex<f32>, max_iter: u32| {
+        let mut z = Complex::<f32>::new(0.0, 0.0);
+        let mut n = 0;
+        while z.norm() < 2.0 && n < max_iter {
+            z = z.powu(2) + c;
+            n += 1;
+        }
+        n
+    };
+
     let real = (x as f32 / WIDTH as f32) * (RE_END - RE_START) + RE_START;
     let imaginary = (y as f32 / HEIGHT as f32) * (IM_END - IM_START) + IM_START;
-    let px_value = mandelbrot_calc_base(Complex::new(real, imaginary), 500);
+    let px_value = calc(Complex::new(real, imaginary), 500);
 
     let px_value = ((px_value as f32 / 1000.0) * 255.0) as u8;
     px_value
-}
-
-fn mandelbrot_calc_base (c: Complex<f32>, max_iter: u32) -> u32 {
-    let mut z = Complex::<f32>::new(0.0, 0.0);
-    let mut n = 0;
-    while z.norm() < 2.0 && n < max_iter {
-        z = z.powu(2) + c;
-        n += 1;
-    }
-    return n;
 }

@@ -1,45 +1,55 @@
-use crate::{WIDTH, HEIGHT};
+use crate::{HEIGHT, SCALE, WIDTH};
 extern crate image as img;
-use img::{Rgba, ImageBuffer};
-use piston_window::{PistonWindow, WindowSettings, TextureContext, Texture, TextureSettings, clear, image};
+use piston_window::{
+    clear, rectangle, PistonWindow, RenderEvent, Transformed, WindowSettings,
+};
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use std::sync::mpsc::channel;
+use std::thread;
 
 pub fn make_win_and_show<F>(name: &'static str, f: F)
-    where
-        F: Fn(u32, u32) -> [u8; 4],
+where
+    F: Fn(u32, u32) -> [f32; 4] + Send + Sync + 'static,
 {
-    //region calc
-    println!("Starting...");
+    let (tx, rx) = channel();
 
-    let mut img = ImageBuffer::new(WIDTH, HEIGHT);
-    img.enumerate_pixels_mut().for_each(|(x, y, px)| *px = Rgba(f(x, y)));
-
-    //endregion
-
-    //region window
-    println!("Generated mandelbrot image.");
-    img.save(format!("{}-{}x{}.png", name, WIDTH, HEIGHT))
-        .unwrap_or_else(|e| {
-            eprintln!("Error saving image: {}", e);
-            std::process::exit(1);
+    thread::spawn(move || {
+        (0..WIDTH).into_par_iter().for_each_with(tx, |tx, x| {
+        // (0..WIDTH).into_iter().for_each(|x| {
+            for y in 0..HEIGHT {
+                tx.send((x, y, f(x, y))).unwrap();
+            }
+            // std::thread::sleep(std::time::Duration::from_secs(5));
         });
+    });
 
-    let mut window: PistonWindow = WindowSettings::new(name, [WIDTH, HEIGHT])
+    let mut the_list = Vec::with_capacity((WIDTH * HEIGHT) as usize);
+    let mut window: PistonWindow = WindowSettings::new(name, [((WIDTH as f64) * SCALE) as u32, ((HEIGHT as f64) * SCALE) as u32])
         .exit_on_esc(true)
+        .vsync(true)
         .build()
         .unwrap();
-
-    let mut texture_context = TextureContext {
-        factory: window.factory.clone(),
-        encoder: window.factory.create_command_buffer().into(),
-    };
-
-    let texture = Texture::from_image(&mut texture_context, &img, &TextureSettings::new()).unwrap();
+    println!("Made window");
 
     while let Some(e) = window.next() {
-        window.draw_2d(&e, |c, g, _d| {
-            clear([1.0; 4], g);
-            image(&texture, c.transform, g);
-        });
+        println!("Event: {:?}", &e);
+        while let Ok(stuff) = rx.recv() {
+            the_list.push(stuff);
+        }
+
+        if let Some(_r) = e.render_args() {
+            window.draw_2d(&e, |c, g, _d| {
+                println!("Rendering!");
+                clear([1.0; 4], g);
+                for (x, y, px) in &the_list {
+                    rectangle(
+                        *px,
+                        [0.0, 0.0, 10.0, 10.0],
+                        c.transform.trans(*x as f64 * SCALE, *y as f64 * SCALE),
+                        g,
+                    );
+                }
+            });
+        }
     }
-    //endregion
 }

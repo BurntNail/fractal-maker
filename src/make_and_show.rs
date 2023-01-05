@@ -1,3 +1,4 @@
+use crate::patterns::Pattern;
 use crate::{HEIGHT, SCALE, WIDTH};
 extern crate image as img;
 use piston_window::{
@@ -7,9 +8,9 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use std::sync::mpsc::channel;
 use std::thread;
 
-pub fn make_win_and_show<F>(name: &'static str, f: F)
+pub fn make_win_and_show<F>(name: &'static str)
 where
-    F: Fn(u32, u32) -> [f32; 4] + Send + Sync + 'static,
+    F: Pattern,
 {
     let (tx, rx) = channel();
 
@@ -17,7 +18,7 @@ where
         (0..WIDTH).into_par_iter().for_each_with(tx, |tx, x| {
         // (0..WIDTH).into_iter().for_each(|x| {
             for y in 0..HEIGHT {
-                tx.send((x, y, f(x, y))).unwrap();
+                tx.send((x, y, F::get_px(x, y))).unwrap();
             }
             // std::thread::sleep(std::time::Duration::from_secs(5));
         });

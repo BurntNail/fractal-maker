@@ -1,3 +1,6 @@
+#![warn(clippy::all, clippy::pedantic, clippy::nursery)]
+#![allow(clippy::cast_possible_truncation, clippy::cast_possible_wrap, clippy::cast_sign_loss, clippy::cast_lossless, clippy::cast_precision_loss)]
+
 mod make_and_show;
 mod patterns;
 

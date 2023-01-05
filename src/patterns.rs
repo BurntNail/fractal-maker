@@ -28,8 +28,8 @@ impl Pattern for Mandlebrot {
         const IM_END: f32 = 1.0;
     
         let calc = || {
-            let real = (x as f32 / WIDTH as f32) * (RE_END - RE_START) + RE_START;
-            let imaginary = (y as f32 / HEIGHT as f32) * (IM_END - IM_START) + IM_START;
+            let real = (x as f32 / WIDTH as f32).mul_add(RE_END - RE_START, RE_START);
+            let imaginary = (y as f32 / HEIGHT as f32).mul_add(IM_END - IM_START, IM_START);
     
             let ccomplex_n = Complex::new(real, imaginary);
     
@@ -52,11 +52,11 @@ impl Pattern for Julia {
     //from: https://crates.io/crates/image
     fn get_px (x: u32, y: u32) -> [f32; 4] {
         let calc = || {
-            let scalex = 3.0 / WIDTH as f32;
-            let scaley = 3.0 / HEIGHT as f32;
+            let scale_x = 3.0 / WIDTH as f32;
+            let scale_y = 3.0 / HEIGHT as f32;
     
-            let cx = y as f32 * scalex - 1.5;
-            let cy = x as f32 * scaley - 1.5;
+            let cx = y as f32 * scale_x - 1.5;
+            let cy = x as f32 * scale_y - 1.5;
     
             let cmplex_n = Complex::new(-0.4, 0.6);
             let mut mutable_cmplex_n = Complex::new(cx, cy);
